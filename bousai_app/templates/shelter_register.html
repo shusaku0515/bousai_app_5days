@@ -4,17 +4,15 @@
 <h2>避難所登録</h2>
 <p>新しい避難所情報を登録します。</p>
 
-<!-- 成功・エラーメッセージ表示 -->
-{% if success %}
-  <p>{{ message }}</p>
-{% endif %}
-
 {% if error %}
   <p>{{ message }}</p>
 {% endif %}
 
 <form method="POST">
   <p>
+    {% if success %}
+      <span>{{ message }}</span><br>
+    {% endif %}
     <label for="name">避難所名（必須）</label><br>
     <input type="text" id="name" name="name">
   </p>
