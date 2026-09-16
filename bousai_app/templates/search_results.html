@@ -1,12 +1,52 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+  .results-page { width: min(100% - 32px, 920px); margin: 30px auto; }
+  .results-page h2 { color: #2458a9; }
+  .sort-status { color: #6f7d90; }
+  .shelter-result {
+    margin: 0 0 22px;
+    padding: 18px;
+    border: 1px solid #d8e0ea;
+    border-radius: 10px;
+    background: #fff;
+  }
+  .shelter-name { margin: 0 0 8px; font-size: 23px; }
+  .availability { display: inline-block; margin-left: 10px; padding: 4px 10px; border-radius: 5px; color: #fff; background: #18a8df; font-size: 14px; font-weight: 700; }
+  .feature-marks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .feature-mark { padding: 4px 8px; border-radius: 4px; color: #fff; background: #f28b00; font-size: 12px; }
+  .distance { color: #6f7d90; font-size: 14px; }
+  @media (max-width: 600px) { .results-page { width: min(100% - 20px, 920px); } }
+</style>
+
+<main class="results-page">
 <h2>検索結果</h2>
+{% if location_received %}
+  <p class="sort-status">現在地から近い順に表示しています。</p>
+{% else %}
+  <p class="sort-status">位置情報を取得できなかったため、登録順で表示しています。</p>
+{% endif %}
 
 {% if results %}
   <ul>
     {% for shelter in results %}
-    <li>{{ shelter.name }}</li>
+    <li class="shelter-result">
+      <h3 class="shelter-name">
+        {{ shelter.name }}
+        <span class="availability">{{ shelter.availability or '空き情報未登録' }}</span>
+      </h3>
+      <div class="feature-marks">
+        {% for key, label in shelter_features.items() %}
+          {% if shelter.get(key, false) %}
+            <span class="feature-mark">✓ {{ label }}</span>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% if shelter.get('distance_km') is not none %}
+        <span class="distance">現在地から約{{ '%.1f'|format(shelter.get('distance_km')) }}km</span>
+      {% endif %}
+    </li>
     {% endfor %}
   </ul>
 {% else %}
@@ -17,4 +57,5 @@
   <a href="/shelter_search">検索画面に戻る</a> |
   <a href="/">トップページへ戻る</a>
 </p>
+</main>
 {% endblock %}

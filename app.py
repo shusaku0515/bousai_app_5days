@@ -4,6 +4,7 @@ from functools import wraps
 import json
 import os
 import urllib.request
+from math import asin, cos, radians, sin, sqrt
 from datetime import datetime, timedelta, timezone
 
 # app.py はプロジェクト直下に置く。
@@ -76,6 +77,18 @@ WARNING_CODES = {
     "43": "レベル4大雨危険警報",
     "48": "レベル4高潮危険警報",
     "49": "レベル4土砂災害危険警報"
+}
+
+SHELTER_FEATURES = {
+    'shortest': '最短',
+    'barrier_free': 'バリアフリー',
+    'parking': '駐車場あり',
+    'nursing_room': '授乳室',
+    'pets_allowed': 'ペット可',
+    'universal_design': 'ユニバーサルデザイン',
+    'prayer_room': '礼拝室あり',
+    'air_conditioning': '空調完備',
+    'large_facility': '大規模施設'
 }
 
 # ────────────────────────────────
@@ -151,6 +164,25 @@ def format_report_time(iso_str):
 def filter_shelters(district=None):
     """district 指定があれば一致する避難所のみ、なければ全件を返す"""
     return [s for s in shelters if not district or s.get('district') == district]
+
+
+def calculate_distance_km(latitude, longitude, shelter):
+    """現在地と避難所の緯度経度から距離（km）を計算する"""
+    shelter_latitude = shelter.get('latitude')
+    shelter_longitude = shelter.get('longitude')
+    if shelter_latitude is None or shelter_longitude is None:
+        return None
+
+    latitude_delta = radians(float(shelter_latitude) - latitude)
+    longitude_delta = radians(float(shelter_longitude) - longitude)
+    start_latitude = radians(latitude)
+    end_latitude = radians(float(shelter_latitude))
+    haversine = (
+        sin(latitude_delta / 2) ** 2
+        + cos(start_latitude) * cos(end_latitude)
+        * sin(longitude_delta / 2) ** 2
+    )
+    return 6371 * 2 * asin(sqrt(haversine))
 
 
 def parse_area_warnings(warning_data):
@@ -329,7 +361,15 @@ def shelter_register():
 # 避難所検索ページ
 @app.route('/shelter_search')
 def shelter_search():
-    return render_template('shelter_search.html')
+    selected_features = [
+        feature for feature in request.args.getlist('feature')
+        if feature in SHELTER_FEATURES
+    ]
+    return render_template(
+        'shelter_search.html',
+        shelter_features=SHELTER_FEATURES,
+        selected_features=selected_features
+    )
 
 # 全施設一覧ページ
 @app.route('/all_shelters')
@@ -347,8 +387,50 @@ def board():
 # 検索結果ページ：templates/search_results.html を返す
 @app.route('/search_results')
 def search_results():
-    results = filter_shelters(request.args.get('district'))
-    return render_template('search_results.html', results=results)
+    district = request.args.get('district')
+    name = request.args.get('name', '').strip()
+    try:
+        user_latitude = float(request.args.get('latitude', ''))
+        user_longitude = float(request.args.get('longitude', ''))
+    except (TypeError, ValueError):
+        user_latitude = None
+        user_longitude = None
+
+    results = filter_shelters(district)
+    selected_features = [
+        feature for feature in request.args.getlist('feature')
+        if feature in SHELTER_FEATURES
+    ]
+    if name:
+        results = [
+            shelter for shelter in results
+            if name.casefold() in shelter.get('name', '').casefold()
+        ]
+    if selected_features:
+        results = [
+            shelter for shelter in results
+            if all(shelter.get(feature, False) for feature in selected_features)
+        ]
+
+    results = [dict(shelter) for shelter in results]
+    if user_latitude is not None and user_longitude is not None:
+        for shelter in results:
+            shelter['distance_km'] = calculate_distance_km(
+                user_latitude, user_longitude, shelter
+            )
+        results.sort(
+            key=lambda shelter: (
+                shelter['distance_km'] is None,
+                shelter['distance_km'] or 0
+            )
+        )
+
+    return render_template(
+        'search_results.html',
+        results=results,
+        shelter_features=SHELTER_FEATURES,
+        location_received=user_latitude is not None and user_longitude is not None
+    )
 
 # JSON API：/shelters?district=地区名
 @app.route('/shelters', methods=['GET'])

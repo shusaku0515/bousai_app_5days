@@ -1,8 +1,123 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>避難所検索</h2>
-<p>登録されている避難所を確認できます。</p>
+<style>
+	.search-page {
+		width: min(100% - 32px, 800px);
+		margin: 34px auto;
+		padding: 28px;
+		border: 1px solid #e6ebf2;
+		border-radius: 16px;
+		background: #fff;
+		box-shadow: 0 8px 26px rgba(40, 70, 110, .08);
+	}
 
-<p><a href="/all_shelters">全施設一覧</a></p>
+	.search-page h2 { margin-top: 0; color: #2458a9; }
+	.search-form { display: grid; gap: 10px; max-width: 560px; }
+	.search-form label { font-weight: 700; }
+	.search-form input {
+		width: 100%;
+		padding: 12px;
+		border: 1px solid #c9d2df;
+		border-radius: 6px;
+		font-size: 16px;
+	}
+	.feature-heading { margin: 10px 0 0; font-weight: 700; }
+	.feature-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 10px;
+	}
+	.feature-option {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		min-height: 42px;
+		padding: 8px 10px;
+		border: 1px solid #c9d2df;
+		border-radius: 6px;
+		background: #f7f9fc;
+		font-weight: 400;
+		cursor: pointer;
+	}
+	.feature-option input { width: auto; }
+	.search-form button {
+		width: fit-content;
+		padding: 11px 28px;
+		border: 0;
+		border-radius: 6px;
+		color: #fff;
+		background: #2458a9;
+		font-size: 16px;
+		cursor: pointer;
+	}
+	.search-form button:hover { background: #19478f; }
+	.location-status { margin: 0; color: #6f7d90; font-size: 14px; }
+
+	@media (max-width: 600px) {
+		.search-page { width: min(100% - 20px, 800px); padding: 20px; }
+		.feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	}
+</style>
+
+<section class="search-page">
+	<h2>避難所検索</h2>
+	<p>条件を入力して避難所を検索できます。</p>
+
+	<form class="search-form" method="get" action="{{ url_for('search_results') }}">
+		<input type="hidden" name="latitude" id="latitude">
+		<input type="hidden" name="longitude" id="longitude">
+		<label for="name">避難所名</label>
+		<input type="search" id="name" name="name" value="{{ request.args.get('name', '') }}" placeholder="避難所名を入力">
+		<p class="feature-heading">設備・条件（複数選択可）</p>
+		<div class="feature-grid">
+			{% for key, label in shelter_features.items() %}
+			<label class="feature-option">
+				<input type="checkbox" name="feature" value="{{ key }}"{% if key in selected_features %} checked{% endif %}>
+				{{ label }}
+			</label>
+			{% endfor %}
+		</div>
+		<button type="submit">検索</button>
+		<p class="location-status" id="locationStatus">検索時に現在地を取得します。</p>
+	</form>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+	const form = document.querySelector('.search-form');
+	const status = document.getElementById('locationStatus');
+	const latitude = document.getElementById('latitude');
+	const longitude = document.getElementById('longitude');
+	let locationRequested = false;
+
+	form.addEventListener('submit', function(event) {
+		if (locationRequested || (latitude.value && longitude.value)) {
+			return;
+		}
+		event.preventDefault();
+		locationRequested = true;
+		status.textContent = '現在地を取得しています...';
+
+		if (!navigator.geolocation) {
+			status.textContent = '位置情報を利用できないため、登録順で表示します。';
+			form.submit();
+			return;
+		}
+
+		navigator.geolocation.getCurrentPosition(
+			function(position) {
+				latitude.value = position.coords.latitude;
+				longitude.value = position.coords.longitude;
+				form.submit();
+			},
+			function() {
+				status.textContent = '位置情報を取得できないため、登録順で表示します。';
+				form.submit();
+			}
+		);
+	});
+});
+</script>
+
 {% endblock %}
