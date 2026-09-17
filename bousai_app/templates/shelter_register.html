@@ -16,6 +16,24 @@
     <label for="name">避難所名（必須）</label><br>
     <input type="text" id="name" name="name">
   </p>
+  <fieldset>
+    <legend>空き状況</legend>
+    {% for availability in ['満員', '余裕あり', '普通'] %}
+      <label>
+        <input type="radio" name="availability" value="{{ availability }}"{% if availability == selected_availability %} checked{% endif %}>
+        {{ availability }}
+      </label>
+    {% endfor %}
+  </fieldset>
+  <fieldset>
+    <legend>設備・条件</legend>
+    {% for key, label in shelter_features.items() %}
+      <label>
+        <input type="checkbox" name="feature" value="{{ key }}"{% if key in selected_features %} checked{% endif %}>
+        {{ label }}
+      </label><br>
+    {% endfor %}
+  </fieldset>
   <p><button type="submit">登録</button></p>
 </form>
 {% endblock %}

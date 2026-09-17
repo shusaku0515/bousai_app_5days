@@ -1,46 +1,75 @@
 [
   {
     "id": 1,
-    "name": "御所見小学校"
+    "name": "御所見小学校",
+    "availability": "普通",
+    "parking": true,
+    "pets_allowed": true
   },
   {
     "id": 2,
-    "name": "片瀬小学校"
+    "name": "片瀬小学校",
+    "availability": "余裕あり",
+    "shortest": true,
+    "barrier_free": true,
+    "parking": true,
+    "nursing_room": true,
+    "pets_allowed": true,
+    "universal_design": true,
+    "prayer_room": true,
+    "air_conditioning": true
   },
   {
     "id": 5,
-    "name": "鵠洋小学校"
+    "name": "鵠洋小学校",
+    "availability": "普通"
   },
   {
     "id": 6,
-    "name": "高校"
+    "name": "高校",
+    "availability": "満員"
   },
   {
     "id": 7,
-    "name": "高校"
+    "name": "高校",
+    "availability": "満員"
   },
   {
     "id": 8,
-    "name": "高校"
+    "name": "高校",
+    "availability": "満員"
   },
   {
     "id": 9,
-    "name": "高校"
+    "name": "高校",
+    "availability": "満員"
   },
   {
     "id": 10,
-    "name": "高校"
+    "name": "高校",
+    "availability": "満員"
   },
   {
     "id": 11,
-    "name": "高校"
+    "name": "高校",
+    "availability": "満員"
   },
   {
     "id": 12,
-    "name": "高校"
+    "name": "高校",
+    "availability": "満員"
   },
   {
     "id": 13,
-    "name": "京都学校"
+    "name": "京都学校",
+    "availability": "普通"
+  },
+  {
+    "id": 14,
+    "name": "xyz",
+    "availability": "普通",
+    "barrier_free": true,
+    "air_conditioning": true,
+    "large_facility": true
   }
 ]

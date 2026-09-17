@@ -343,20 +343,44 @@ def shelter_register():
             return render_template(
                 'shelter_register.html',
                 error=True,
-                message='避難所名を入力してください。'
+                message='避難所名を入力してください。',
+                shelter_features=SHELTER_FEATURES,
+                selected_features=request.form.getlist('feature'),
+                selected_availability=request.form.get('availability', '普通')
             )
 
+        availability_options = ('満員', '余裕あり', '普通')
+        availability = request.form.get('availability', '普通')
+        if availability not in availability_options:
+            availability = '普通'
+        selected_features = [
+            feature for feature in request.form.getlist('feature')
+            if feature in SHELTER_FEATURES
+        ]
         next_id = max((shelter.get('id', 0) for shelter in shelters), default=0) + 1
-        shelters.append({'id': next_id, 'name': name})
+        shelter = {
+            'id': next_id,
+            'name': name,
+            'availability': availability
+        }
+        shelter.update({feature: True for feature in selected_features})
+        shelters.append(shelter)
         save_shelters()
         return render_template(
             'shelter_register.html',
             success=True,
-            message='避難所を登録しました'
-
+            message='避難所を登録しました',
+            shelter_features=SHELTER_FEATURES,
+            selected_features=[],
+            selected_availability='普通'
         )
 
-    return render_template('shelter_register.html')
+    return render_template(
+        'shelter_register.html',
+        shelter_features=SHELTER_FEATURES,
+        selected_features=[],
+        selected_availability='普通'
+    )
 
 # 避難所検索ページ
 @app.route('/shelter_search')
@@ -374,7 +398,12 @@ def shelter_search():
 # 全施設一覧ページ
 @app.route('/all_shelters')
 def all_shelters():
-    return render_template('search_results.html', results=shelters)
+    return render_template(
+        'search_results.html',
+        results=shelters,
+        shelter_features=SHELTER_FEATURES,
+        selected_features=[]
+    )
 
 
 # 指示ボード：住民向けの指示を一覧で確認する
@@ -406,13 +435,15 @@ def search_results():
             shelter for shelter in results
             if name.casefold() in shelter.get('name', '').casefold()
         ]
-    if selected_features:
-        results = [
-            shelter for shelter in results
-            if all(shelter.get(feature, False) for feature in selected_features)
-        ]
 
     results = [dict(shelter) for shelter in results]
+    if selected_features:
+        for shelter in results:
+            shelter['_matched_feature_count'] = sum(
+                bool(shelter.get(feature, False)) for feature in selected_features
+            )
+        results.sort(key=lambda shelter: -shelter['_matched_feature_count'])
+
     if user_latitude is not None and user_longitude is not None:
         for shelter in results:
             shelter['distance_km'] = calculate_distance_km(
@@ -420,6 +451,7 @@ def search_results():
             )
         results.sort(
             key=lambda shelter: (
+                -shelter.get('_matched_feature_count', 0),
                 shelter['distance_km'] is None,
                 shelter['distance_km'] or 0
             )
@@ -429,6 +461,7 @@ def search_results():
         'search_results.html',
         results=results,
         shelter_features=SHELTER_FEATURES,
+        selected_features=selected_features,
         location_received=user_latitude is not None and user_longitude is not None
     )
 

@@ -12,10 +12,16 @@
     border-radius: 10px;
     background: #fff;
   }
+  .shelter-result--matched { border-color: #f28b00; background: #fff8e8; }
+  .shelter-result--unmatched { border-color: #d8dde5; background: #f5f6f8; color: #7c8796; }
   .shelter-name { margin: 0 0 8px; font-size: 23px; }
-  .availability { display: inline-block; margin-left: 10px; padding: 4px 10px; border-radius: 5px; color: #fff; background: #18a8df; font-size: 14px; font-weight: 700; }
+  .availability { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; padding: 4px 10px; border-radius: 5px; color: #fff; font-size: 14px; font-weight: 700; }
+  .availability--full { background: #d93636; }
+  .availability--available { background: #1976d2; }
+  .availability--normal { background: #e0a500; }
   .feature-marks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
   .feature-mark { padding: 4px 8px; border-radius: 4px; color: #fff; background: #f28b00; font-size: 12px; }
+  .feature-mark--unmatched { color: #7c8796; background: #e1e5eb; }
   .distance { color: #6f7d90; font-size: 14px; }
   @media (max-width: 600px) { .results-page { width: min(100% - 20px, 920px); } }
 </style>
@@ -31,15 +37,19 @@
 {% if results %}
   <ul>
     {% for shelter in results %}
-    <li class="shelter-result">
+    <li class="shelter-result{% if selected_features %}{% if shelter.get('_matched_feature_count', 0) > 0 %} shelter-result--matched{% else %} shelter-result--unmatched{% endif %}{% endif %}">
       <h3 class="shelter-name">
         {{ shelter.name }}
-        <span class="availability">{{ shelter.availability or '空き情報未登録' }}</span>
+        {% set availability = shelter.availability or '普通' %}
+        <span class="availability availability--{% if availability == '満員' %}full{% elif availability == '余裕あり' %}available{% else %}normal{% endif %}">
+          {% if availability == '満員' %}😣😣😣{% elif availability == '余裕あり' %}🙂{% else %}😐😐{% endif %}
+          {{ availability }}
+        </span>
       </h3>
       <div class="feature-marks">
         {% for key, label in shelter_features.items() %}
           {% if shelter.get(key, false) %}
-            <span class="feature-mark">✓ {{ label }}</span>
+            <span class="feature-mark{% if not selected_features or key not in selected_features %} feature-mark--unmatched{% endif %}">✓ {{ label }}</span>
           {% endif %}
         {% endfor %}
       </div>
